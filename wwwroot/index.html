@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CineTracker - Tu Gestor de Películas</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0f172a;
+      --card-bg: rgba(30, 41, 59, 0.7);
+      --card-border: rgba(255, 255, 255, 0.1);
+      --accent: #6366f1;
+      --accent-hover: #4f46e5;
+      --accent-glow: rgba(99, 102, 241, 0.35);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --star-color: #fbbf24;
+      --radius: 16px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Outfit', sans-serif;
+    }
+
+    body {
+      background: radial-gradient(circle at top, #1e1b4b 0%, #0f172a 60%);
+      color: var(--text-main);
+      min-height: 100vh;
+      padding-bottom: 60px;
+    }
+
+    header {
+      backdrop-filter: blur(12px);
+      background: rgba(15, 23, 42, 0.8);
+      border-bottom: 1px solid var(--card-border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      padding: 20px 0;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    .nav-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #fff;
+      text-decoration: none;
+    }
+
+    .logo-icon {
+      background: linear-gradient(135deg, #818cf8, #6366f1);
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      box-shadow: 0 4px 15px var(--accent-glow);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+      color: #fff;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 15px var(--accent-glow);
+      transition: all 0.2s ease;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px var(--accent-glow);
+    }
+
+    .controls-section {
+      margin: 32px 0 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .search-box {
+      position: relative;
+      flex: 1;
+      min-width: 280px;
+    }
+
+    .search-box input {
+      width: 100%;
+      background: rgba(30, 41, 59, 0.6);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 12px 16px 12px 44px;
+      color: #fff;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .search-box input:focus {
+      border-color: var(--accent);
+    }
+
+    .search-box svg {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      fill: var(--text-muted);
+      width: 18px;
+      height: 18px;
+    }
+
+    .filter-tabs {
+      display: flex;
+      gap: 8px;
+      background: rgba(30, 41, 59, 0.6);
+      padding: 4px;
+      border-radius: 12px;
+      border: 1px solid var(--card-border);
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 500;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+    }
+
+    .tab-btn.active {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .movies-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 24px;
+    }
+
+    .movie-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 20px;
+      backdrop-filter: blur(10px);
+      transition: transform 0.2s, box-shadow 0.2s;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .movie-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    }
+
+    .movie-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+
+    .movie-title {
+      font-size: 1.2rem;
+      font-weight: 600;
+      line-height: 1.3;
+      margin-bottom: 4px;
+    }
+
+    .movie-meta {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .status-badge {
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .badge-0 { background: rgba(59, 130, 246, 0.2); color: #93c5fd; } /* PlanToWatch */
+    .badge-1 { background: rgba(234, 179, 8, 0.2); color: #fde047; }  /* Watching */
+    .badge-2 { background: rgba(34, 197, 94, 0.2); color: #86efac; }  /* Completed */
+    .badge-3 { background: rgba(239, 68, 68, 0.2); color: #fca5a5; }  /* Dropped */
+
+    .movie-overview {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin: 12px 0;
+      line-height: 1.5;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .movie-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 16px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .rating-stars {
+      color: var(--star-color);
+      font-weight: 600;
+      font-size: 0.95rem;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn-icon {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--card-border);
+      color: var(--text-muted);
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .btn-icon:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .btn-icon.delete:hover {
+      color: #ef4444;
+      background: rgba(239, 68, 68, 0.15);
+    }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(6px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+      padding: 20px;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal {
+      background: #1e293b;
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      width: 100%;
+      max-width: 500px;
+      padding: 28px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .modal-title {
+      font-size: 1.3rem;
+      font-weight: 700;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .form-control {
+      width: 100%;
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: #fff;
+      font-size: 0.95rem;
+      outline: none;
+    }
+
+    .form-control:focus {
+      border-color: var(--accent);
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .btn-secondary {
+      background: transparent;
+      border: 1px solid var(--card-border);
+      color: var(--text-muted);
+      padding: 10px 20px;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      grid-column: 1 / -1;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="container">
+      <div class="nav-content">
+        <a href="#" class="logo">
+          <div class="logo-icon">🎬</div>
+          <span>CineTracker</span>
+        </a>
+        <button class="btn-primary" onclick="openModal()">
+          <span>+ Nueva Película</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="controls-section">
+      <div class="search-box">
+        <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+        <input type="text" id="searchInput" placeholder="Buscar por título o director..." oninput="debounceSearch()">
+      </div>
+
+      <div class="filter-tabs">
+        <button class="tab-btn active" onclick="setFilter(null, this)">Todas</button>
+        <button class="tab-btn" onclick="setFilter(0, this)">Por Ver</button>
+        <button class="tab-btn" onclick="setFilter(1, this)">Viendo</button>
+        <button class="tab-btn" onclick="setFilter(2, this)">Vistas</button>
+      </div>
+    </div>
+
+    <div class="movies-grid" id="moviesGrid">
+      <!-- Se carga dinámicamente -->
+    </div>
+  </main>
+
+  <!-- Modal Agregar / Editar -->
+  <div class="modal-overlay" id="movieModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title" id="modalTitle">Agregar Película</h3>
+        <button class="btn-icon" onclick="closeModal()">✕</button>
+      </div>
+      <form id="movieForm" onsubmit="saveMovie(event)">
+        <input type="hidden" id="movieId">
+        <div class="form-group">
+          <label>Título *</label>
+          <input type="text" id="titleInput" class="form-control" required placeholder="Ej. Interstellar">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Director</label>
+            <input type="text" id="directorInput" class="form-control" placeholder="Ej. Christopher Nolan">
+          </div>
+          <div class="form-group">
+            <label>Género</label>
+            <input type="text" id="genreInput" class="form-control" placeholder="Ej. Sci-Fi">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Año de Estreno</label>
+            <input type="number" id="yearInput" class="form-control" placeholder="Ej. 2014">
+          </div>
+          <div class="form-group">
+            <label>Calificación (1 - 10)</label>
+            <input type="number" id="ratingInput" class="form-control" min="1" max="10" placeholder="Ej. 9">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Estado de Visualización</label>
+          <select id="statusInput" class="form-control">
+            <option value="0">Por Ver (Plan to Watch)</option>
+            <option value="1">Viendo (Watching)</option>
+            <option value="2">Vista (Completed)</option>
+            <option value="3">Abandonada (Dropped)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Sinopsis / Resumen</label>
+          <textarea id="overviewInput" class="form-control" rows="3" placeholder="Breve descripción..."></textarea>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" onclick="closeModal()">Cancelar</button>
+          <button type="submit" class="btn-primary">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    let currentStatus = null;
+    let searchTimeout = null;
+    const statusLabels = { 0: 'Por Ver', 1: 'Viendo', 2: 'Vista', 3: 'Abandonada' };
+
+    async function loadMovies() {
+      const grid = document.getElementById('moviesGrid');
+      const search = document.getElementById('searchInput').value.trim();
+
+      let url = '/api/movies?';
+      if (currentStatus !== null) url += `status=${currentStatus}&`;
+      if (search) url += `search=${encodeURIComponent(search)}`;
+
+      try {
+        const res = await fetch(url);
+        const movies = await res.json();
+
+        if (movies.length === 0) {
+          grid.innerHTML = '<div class="empty-state">No se encontraron películas. ¡Agregá una nueva!</div>';
+          return;
+        }
+
+        grid.innerHTML = movies.map(m => `
+          <div class="movie-card">
+            <div>
+              <div class="movie-header">
+                <div>
+                  <h3 class="movie-title">${escapeHtml(m.title)}</h3>
+                  <div class="movie-meta">${escapeHtml(m.genre || 'Sin género')} • ${m.releaseYear || 'N/A'}</div>
+                </div>
+                <span class="status-badge badge-${m.status}">${statusLabels[m.status]}</span>
+              </div>
+              <p class="movie-overview">${escapeHtml(m.overview || 'Sin descripción disponible.')}</p>
+            </div>
+            <div>
+              <div class="movie-footer">
+                <div class="rating-stars">
+                  ★ ${m.rating ? m.rating + '/10' : 'S/C'}
+                </div>
+                <div class="actions">
+                  <button class="btn-icon" onclick="editMovie(${m.id})" title="Editar">✏️</button>
+                  <button class="btn-icon delete" onclick="deleteMovie(${m.id})" title="Eliminar">🗑️</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        `).join('');
+      } catch (err) {
+        console.error(err);
+        grid.innerHTML = '<div class="empty-state">Error cargando películas desde la API.</div>';
+      }
+    }
+
+    function setFilter(status, btn) {
+      currentStatus = status;
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      loadMovies();
+    }
+
+    function debounceSearch() {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(loadMovies, 300);
+    }
+
+    function openModal(movie = null) {
+      document.getElementById('movieModal').classList.add('active');
+      if (movie) {
+        document.getElementById('modalTitle').innerText = 'Editar Película';
+        document.getElementById('movieId').value = movie.id;
+        document.getElementById('titleInput').value = movie.title;
+        document.getElementById('directorInput').value = movie.director || '';
+        document.getElementById('genreInput').value = movie.genre || '';
+        document.getElementById('yearInput').value = movie.releaseYear || '';
+        document.getElementById('ratingInput').value = movie.rating || '';
+        document.getElementById('statusInput').value = movie.status;
+        document.getElementById('overviewInput').value = movie.overview || '';
+      } else {
+        document.getElementById('modalTitle').innerText = 'Agregar Película';
+        document.getElementById('movieId').value = '';
+        document.getElementById('movieForm').reset();
+      }
+    }
+
+    function closeModal() {
+      document.getElementById('movieModal').classList.remove('active');
+    }
+
+    async function editMovie(id) {
+      const res = await fetch(`/api/movies/${id}`);
+      if (res.ok) {
+        const movie = await res.json();
+        openModal(movie);
+      }
+    }
+
+    async function deleteMovie(id) {
+      if (confirm('¿Seguro que querés eliminar esta película?')) {
+        await fetch(`/api/movies/${id}`, { method: 'DELETE' });
+        loadMovies();
+      }
+    }
+
+    async function saveMovie(e) {
+      e.preventDefault();
+      const id = document.getElementById('movieId').value;
+      const data = {
+        title: document.getElementById('titleInput').value,
+        director: document.getElementById('directorInput').value || null,
+        genre: document.getElementById('genreInput').value || null,
+        releaseYear: parseInt(document.getElementById('yearInput').value) || null,
+        rating: parseInt(document.getElementById('ratingInput').value) || null,
+        status: parseInt(document.getElementById('statusInput').value),
+        overview: document.getElementById('overviewInput').value || null
+      };
+
+      if (id) {
+        await fetch(`/api/movies/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+      } else {
+        await fetch('/api/movies', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+      }
+
+      closeModal();
+      loadMovies();
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/[&<>"']/g, m => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+      }[m]));
+    }
+
+    // Inicializar
+    loadMovies();
+  </script>
+</body>
+</html>

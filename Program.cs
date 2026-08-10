@@ -21,13 +21,15 @@ using (var scope = app.Services.CreateScope())
     db.Database.EnsureCreated();
 }
 
-// Configure the HTTP request pipeline.
+// Enable serving wwwroot/index.html on http://localhost:5255
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
+// Configure OpenAPI in Development
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
-
-app.UseHttpsRedirection();
 
 // Map Movie API Endpoints
 app.MapMovieEndpoints();

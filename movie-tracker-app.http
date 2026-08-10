@@ -1,6 +1,48 @@
 @movie_tracker_app_HostAddress = http://localhost:5255
 
-GET {{movie_tracker_app_HostAddress}}/weatherforecast/
+### Get all movies
+GET {{movie_tracker_app_HostAddress}}/api/movies
 Accept: application/json
 
-###
+### Get movie by ID
+GET {{movie_tracker_app_HostAddress}}/api/movies/1
+Accept: application/json
+
+### Search movies by title or director
+GET {{movie_tracker_app_HostAddress}}/api/movies?search=Nolan
+Accept: application/json
+
+### Filter movies by status (0 = PlanToWatch, 1 = Watching, 2 = Completed, 3 = Dropped)
+GET {{movie_tracker_app_HostAddress}}/api/movies?status=2
+Accept: application/json
+
+### Create a new movie
+POST {{movie_tracker_app_HostAddress}}/api/movies
+Content-Type: application/json
+
+{
+  "title": "Oppenheimer",
+  "overview": "The story of American scientist J. Robert Oppenheimer and his role in the development of the atomic bomb.",
+  "director": "Christopher Nolan",
+  "genre": "Biography",
+  "releaseYear": 2023,
+  "rating": 10,
+  "status": 2
+}
+
+### Update a movie
+PUT {{movie_tracker_app_HostAddress}}/api/movies/1
+Content-Type: application/json
+
+{
+  "title": "Inception (Extended Cut)",
+  "overview": "A thief who steals corporate secrets through the use of dream-sharing technology.",
+  "director": "Christopher Nolan",
+  "genre": "Sci-Fi",
+  "releaseYear": 2010,
+  "rating": 10,
+  "status": 2
+}
+
+### Delete a movie
+DELETE {{movie_tracker_app_HostAddress}}/api/movies/4

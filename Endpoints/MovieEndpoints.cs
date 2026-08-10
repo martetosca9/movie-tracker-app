@@ -1,8 +1,20 @@
 using Microsoft.EntityFrameworkCore;
 using movie_tracker_app.Data;
 using movie_tracker_app.Models;
+using movie_tracker_app.Services;
 
 namespace movie_tracker_app.Endpoints;
+
+public record ImportMovieRequest(
+    string Title,
+    string? Overview,
+    string? Director,
+    string? Genre,
+    int? ReleaseYear,
+    int? Rating,
+    WatchStatus Status,
+    string? PosterUrl
+);
 
 public static class MovieEndpoints
 {
@@ -10,7 +22,7 @@ public static class MovieEndpoints
     {
         var group = routes.MapGroup("/api/movies").WithTags("Movies");
 
-        // GET /api/movies - List all movies (optional filtering by genre or status)
+        // GET /api/movies - List movies in SQLite DB
         group.MapGet("/", async (AppDbContext db, string? genre, WatchStatus? status, string? search) =>
         {
             var query = db.Movies.AsQueryable();
@@ -36,6 +48,50 @@ public static class MovieEndpoints
         })
         .WithName("GetMovies");
 
+        // GET /api/movies/external/search - Search TMDB
+        group.MapGet("/external/search", async (string query, ITmdbService tmdbService) =>
+        {
+            if (string.IsNullOrWhiteSpace(query))
+            {
+                return Results.BadRequest(new { message = "Query string cannot be empty." });
+            }
+
+            var results = await tmdbService.SearchMoviesAsync(query);
+            return Results.Ok(results);
+        })
+        .WithName("SearchExternalMovies");
+
+        // GET /api/movies/external/popular - Get Popular TMDB Movies
+        group.MapGet("/external/popular", async (ITmdbService tmdbService) =>
+        {
+            var results = await tmdbService.GetPopularMoviesAsync();
+            return Results.Ok(results);
+        })
+        .WithName("GetPopularExternalMovies");
+
+        // POST /api/movies/import - Import external movie into local SQLite database
+        group.MapPost("/import", async (ImportMovieRequest req, AppDbContext db) =>
+        {
+            var movie = new Movie
+            {
+                Title = req.Title,
+                Overview = req.Overview,
+                Director = req.Director,
+                Genre = req.Genre,
+                ReleaseYear = req.ReleaseYear,
+                Rating = req.Rating,
+                Status = req.Status,
+                PosterUrl = req.PosterUrl,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            db.Movies.Add(movie);
+            await db.SaveChangesAsync();
+
+            return Results.Created($"/api/movies/{movie.Id}", movie);
+        })
+        .WithName("ImportMovie");
+
         // GET /api/movies/{id} - Get movie by Id
         group.MapGet("/{id:int}", async (int id, AppDbContext db) =>
         {
@@ -44,7 +100,7 @@ public static class MovieEndpoints
         })
         .WithName("GetMovieById");
 
-        // POST /api/movies - Create new movie
+        // POST /api/movies - Create new manual movie
         group.MapPost("/", async (Movie movie, AppDbContext db) =>
         {
             movie.CreatedAt = DateTime.UtcNow;

@@ -1,11 +1,14 @@
 using Microsoft.EntityFrameworkCore;
 using movie_tracker_app.Data;
 using movie_tracker_app.Endpoints;
+using movie_tracker_app.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddOpenApi();
+
+builder.Services.AddHttpClient<ITmdbService, TmdbService>();
 
 // Register AppDbContext with SQLite
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? "Data Source=movies.db";

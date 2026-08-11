@@ -513,6 +513,28 @@
       background: rgba(34, 197, 94, 0.25);
     }
 
+    .tmdb-card.in-library {
+      opacity: 0.55;
+      cursor: default;
+      pointer-events: none;
+    }
+
+    .tmdb-card.in-library:hover {
+      transform: none;
+      border-color: var(--card-border);
+    }
+
+    .tmdb-badge {
+      display: inline-block;
+      margin-top: 6px;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      background: rgba(34, 197, 94, 0.2);
+      color: #86efac;
+    }
+
     .loading {
       text-align: center;
       padding: 40px;
@@ -679,8 +701,20 @@
     let tmdbSearchTimeout = null;
     let selectedTmdbMovie = null;
     let tmdbResultsCache = [];
+    let libraryTmdbIds = new Set();
     const statusLabels = { 0: 'Por Ver', 1: 'Viendo', 2: 'Vista', 3: 'Abandonada' };
     const placeholderPoster = 'https://via.placeholder.com/500x750?text=No+Poster';
+
+    async function refreshLibraryTmdbIds() {
+      try {
+        const res = await fetch('/api/movies?');
+        if (!res.ok) return;
+        const movies = await res.json();
+        libraryTmdbIds = new Set(movies.filter(m => m.tmdbId != null).map(m => m.tmdbId));
+      } catch (err) {
+        console.error(err);
+      }
+    }
 
     async function loadMovies() {
       const grid = document.getElementById('moviesGrid');
@@ -707,7 +741,7 @@
                 <div class="movie-header">
                   <div>
                     <h3 class="movie-title">${escapeHtml(m.title)}</h3>
-                    <div class="movie-meta">${escapeHtml(m.genre || 'Sin género')} • ${m.releaseYear || 'N/A'}</div>
+                    <div class="movie-meta">${escapeHtml(m.genre || 'Sin género')} • ${m.releaseYear || 'N/A'}${m.director ? ` • ${escapeHtml(m.director)}` : ''}</div>
                   </div>
                   <span class="status-badge badge-${m.status}">${statusLabels[m.status]}</span>
                 </div>
@@ -743,9 +777,10 @@
       loadMovies();
     }
 
-    function openTmdbModal() {
+    async function openTmdbModal() {
       document.getElementById('tmdbModal').classList.add('active');
       document.getElementById('tmdbSearchInput').value = '';
+      await refreshLibraryTmdbIds();
       loadPopularMovies();
     }
 
@@ -796,7 +831,6 @@
     function renderTmdbResults(movies, label) {
       tmdbResultsCache = movies;
       const container = document.getElementById('tmdbResults');
-      const grid = document.getElementById('tmdbGrid');
 
       if (!movies.length) {
         container.innerHTML = '<div class="loading">No se encontraron películas.</div>';
@@ -806,20 +840,28 @@
       container.innerHTML = `<p class="section-label">${escapeHtml(label)}</p><div class="tmdb-grid" id="tmdbGrid"></div>`;
       const newGrid = document.getElementById('tmdbGrid');
 
-      newGrid.innerHTML = movies.map((m, i) => `
-        <div class="tmdb-card" onclick="selectTmdbMovie(${i})">
+      newGrid.innerHTML = movies.map((m, i) => {
+        const alreadyIn = libraryTmdbIds.has(m.id);
+        return `
+        <div class="tmdb-card ${alreadyIn ? 'in-library' : ''}" ${alreadyIn ? '' : `onclick="selectTmdbMovie(${i})"`}>
           <img src="${escapeHtml(m.fullPosterUrl || placeholderPoster)}" alt="${escapeHtml(m.title)}" loading="lazy" onerror="this.src='${placeholderPoster}'">
           <div class="tmdb-card-info">
             <div class="tmdb-card-title">${escapeHtml(m.title)}</div>
             <div class="tmdb-card-meta">${m.releaseYear || '?'} • ★ ${m.voteAverage ? m.voteAverage.toFixed(1) : 'N/A'}</div>
+            ${alreadyIn ? '<span class="tmdb-badge">En tu lista</span>' : ''}
           </div>
         </div>
-      `).join('');
+      `;
+      }).join('');
     }
 
     function selectTmdbMovie(index) {
       const movie = tmdbResultsCache[index];
       if (!movie) return;
+      if (libraryTmdbIds.has(movie.id)) {
+        alert(`"${movie.title}" ya está en tu lista.`);
+        return;
+      }
       selectedTmdbMovie = movie;
       document.getElementById('importPreview').innerHTML = `
         <img src="${escapeHtml(movie.fullPosterUrl || placeholderPoster)}" alt="${escapeHtml(movie.title)}" onerror="this.src='${placeholderPoster}'">
@@ -844,14 +886,9 @@
 
       const ratingVal = document.getElementById('importRatingInput').value;
       const data = {
-        title: selectedTmdbMovie.title,
-        overview: selectedTmdbMovie.overview || null,
-        director: null,
-        genre: null,
-        releaseYear: selectedTmdbMovie.releaseYear || null,
+        tmdbId: selectedTmdbMovie.id,
         rating: ratingVal ? parseInt(ratingVal) : null,
-        status: parseInt(document.getElementById('importStatusInput').value),
-        posterUrl: selectedTmdbMovie.fullPosterUrl || null
+        status: parseInt(document.getElementById('importStatusInput').value)
       };
 
       const res = await fetch('/api/movies/import', {
@@ -861,12 +898,20 @@
       });
 
       if (res.ok) {
+        libraryTmdbIds.add(data.tmdbId);
         closeImportModal();
         closeTmdbModal();
         loadMovies();
-      } else {
-        alert('Error al importar la película.');
+        return;
       }
+
+      if (res.status === 409) {
+        const body = await res.json();
+        alert(body.message || 'Esa película ya está en tu lista.');
+        return;
+      }
+
+      alert('Error al importar la película.');
     }
 
     function setFilter(status, btn) {
@@ -958,6 +1003,7 @@
     }
 
     // Inicializar
+    refreshLibraryTmdbIds();
     loadMovies();
   </script>
 </body>

@@ -6,6 +6,11 @@ public class Movie
 {
     public int Id { get; set; }
 
+    /// <summary>
+    /// External The Movie Database ID. Null for manually created movies.
+    /// </summary>
+    public int? TmdbId { get; set; }
+
     [Required]
     [MaxLength(200)]
     public string Title { get; set; } = string.Empty;

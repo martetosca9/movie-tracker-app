@@ -6,14 +6,9 @@ using movie_tracker_app.Services;
 namespace movie_tracker_app.Endpoints;
 
 public record ImportMovieRequest(
-    string Title,
-    string? Overview,
-    string? Director,
-    string? Genre,
-    int? ReleaseYear,
+    int TmdbId,
     int? Rating,
-    WatchStatus Status,
-    string? PosterUrl
+    WatchStatus Status
 );
 
 public static class MovieEndpoints
@@ -69,19 +64,36 @@ public static class MovieEndpoints
         })
         .WithName("GetPopularExternalMovies");
 
-        // POST /api/movies/import - Import external movie into local SQLite database
-        group.MapPost("/import", async (ImportMovieRequest req, AppDbContext db) =>
+        // POST /api/movies/import - Import TMDB movie into local SQLite database
+        group.MapPost("/import", async (ImportMovieRequest req, AppDbContext db, ITmdbService tmdbService) =>
         {
+            var existing = await db.Movies.FirstOrDefaultAsync(m => m.TmdbId == req.TmdbId);
+            if (existing is not null)
+            {
+                return Results.Conflict(new
+                {
+                    message = $"\"{existing.Title}\" ya está en tu lista.",
+                    movie = existing
+                });
+            }
+
+            var details = await tmdbService.GetMovieDetailsAsync(req.TmdbId);
+            if (details is null)
+            {
+                return Results.NotFound(new { message = $"No se encontró la película de TMDB con id {req.TmdbId}." });
+            }
+
             var movie = new Movie
             {
-                Title = req.Title,
-                Overview = req.Overview,
-                Director = req.Director,
-                Genre = req.Genre,
-                ReleaseYear = req.ReleaseYear,
+                TmdbId = details.Id,
+                Title = details.Title,
+                Overview = details.Overview,
+                Director = details.DirectorName,
+                Genre = details.GenreNames,
+                ReleaseYear = details.ReleaseYear,
                 Rating = req.Rating,
                 Status = req.Status,
-                PosterUrl = req.PosterUrl,
+                PosterUrl = details.FullPosterUrl,
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -104,6 +116,7 @@ public static class MovieEndpoints
         group.MapPost("/", async (Movie movie, AppDbContext db) =>
         {
             movie.CreatedAt = DateTime.UtcNow;
+            movie.TmdbId = null;
             db.Movies.Add(movie);
             await db.SaveChangesAsync();
 
